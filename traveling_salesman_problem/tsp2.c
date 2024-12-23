@@ -1,4 +1,6 @@
 
+//alternative tsp function for tsp.c
+
 double	tsp(double (*cities)[2], const int count, bool *visited, int current, int depth, double result)
 {
 	double dist;

@@ -4,112 +4,48 @@
 #include <math.h>
 #include <string.h>
 #include <float.h>
+//
+//alternative tsp function for tsp.c
 
-#define CITY_0 0
-#define NO_PREV -1
+void tsp(double (*cities)[2], bool *visited, int count, int current, int
+depth,
+         double sum, double *result) {
+  double dist;
+  int i;
 
-float	distance(double x1, double y1, double x2, double y2)
-{
-	double x = x2 - x1;
-	double y = y2 - y1;
-	return (sqrt(x * x + y * y));
-}
+  if (all_cities_visited(visited, count) || depth == count) {
+    dist = distance(cities[current][0], cities[current][1], cities[0][0],
+                    cities[0][1]);
+    sum += dist;
+    if (sum < *result)
+      *result = sum;
+    return;
+  }
 
-int	count_cities(void)
-{
-	char *line = NULL;
-	int	bytes_read;
-	int	count = 0;
-	size_t	len = 0;
-
-	while (true)
-	{
-		bytes_read = getline(&line, &len, stdin);
-		free(line);
-		line = NULL;
-		if (bytes_read == -1)
-			break;
-		count++;
-	}
-	fseek(stdin, 0, SEEK_SET);
-	return (count);
-}
-
-void	get_coordinates(double (*cities)[2], const int count)
-{
-	int	i = -1;
-
-	while (++i < count)
-		scanf("%lf %lf", &cities[i][0], &cities[i][1]);
-}
-
-void	ft_bzero(void *s, size_t n)
-{
-	unsigned char	*ptr = s;
-
-	while (n--)
-		*ptr++ = 0;
-}
-
-bool	all_cities_visited(bool *visited, const int count)
-{
-	int	i = -1;
-
-	while (++i < count)
-		if (!visited[i])
-			return (false);
-	return (true);
-}
-void tsp(double c[][2], bool *visited, double current_dist, double *min_dist, int count, int prev)
-{
-    // Base case: all cities visited
-    if (all_cities_visited(visited, count))
-    {
-        // Add distance back to the starting city
-        if (prev != NO_PREV)
-        {
-            current_dist += distance(c[prev][0], c[prev][1], c[CITY_0][0], c[CITY_0][1]);
-        }
-        if (current_dist < *min_dist)
-        {
-            *min_dist = current_dist;
-        }
-        return;
+  for (i = 0; i < count; i++) {
+    if (!visited[i]) {
+      dist = distance(cities[current][0], cities[current][1], cities[i][0],
+                      cities[i][1]);
+      visited[i] = true;
+      tsp(cities, visited, count, i, depth + 1, sum + dist, result);
+      visited[i] = false;
     }
-
-    // First call: start with CITY_0
-    if (prev == NO_PREV)
-    {
-        visited[CITY_0] = true;
-        tsp(c, visited, 0.0, min_dist, count, CITY_0);
-        return;
-    }
-
-    // Explore all unvisited cities
-    for (int next = 0; next < count; next++)
-    {
-        if (!visited[next])
-        {
-            visited[next] = true;
-            double dist = distance(c[prev][0], c[prev][1], c[next][0], c[next][1]);
-            tsp(c, visited, current_dist + dist, min_dist, count, next);
-            visited[next] = false; // backtrack
-        }
-    }
+  }
+  return;
 }
 
-int main(void)
-{
-    int count = count_cities();
-    double c[count][2];
-    bool visited[count];
-    double min_dist = DBL_MAX;
+int main(void) {
+  int count = count_cities();
+  bool visited[count];
+  double cities[count][2];
+  double result = DBL_MAX;
+  double sum = 0.0;
 
-    get_coordinates(c, count);
-    for (int i = 0; i < count; i++)
-        visited[i] = false;
-    tsp(c, visited, 0.0, &min_dist, count, NO_PREV);
-    printf("%.2f\n", min_dist);
-
-    return 0;
+  if (count < 2)
+    return 1;
+  get_coordinates(cities, count);
+  ft_bzero(visited, count * sizeof(bool));
+  visited[0] = true;
+  tsp(cities, visited, count, 0, 1, sum, &result);
+  fprintf(stdout, "%.2f\n", result);
 }
