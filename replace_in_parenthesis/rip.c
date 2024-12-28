@@ -10,11 +10,28 @@
 * Otherwise it prints all possible variations of replacing brackets to make the string balanced
 * seperated by newlines.
 * Order of different variations is not important.
+* example:
+*                 "())"  (i = 0)
+                   |
+                 "())"  (i = 1)
+               /     \
+           "())"     "( )"  (i = 2)
+          /    \       |
+     "())"   "() "    [B]  (i = 3)
+	  |        |
+     [X]      [B]
+
+output:
+() 
+( )
+[B] = Balanced, print
+[X] = Not balanced, don't print
 */
 
 #include <unistd.h>
 #include <stdio.h>
 
+#define abs(x) ((x) < 0 ? -(x) : (x))
 
 // see man strlen
 int	ft_strlen(const char *str)
@@ -46,57 +63,81 @@ int	is_balanced(const char *str)
 	return (count);
 }
 
-void	rip(char *str, int balanced, char *curr)
+int	count_brackets(const char *str, int *open, int *close)
 {
-	int	converted = 0;
-	//base case
-	if (!is_balanced(str))
+	while (*str)
 	{
-		// printf("at end str: %s\n", str);
-		write(1, str, ft_strlen(str));
-		write(1, "\n", 1);
-		return ;
-	}
-	//assumptions generator depth first
-	while (*curr)
-	{
-		if (*curr != '(' && *curr != ')')
-			curr++;
-			// write(1, curr, 1);
+		if (*str == '(')
+			(*open)++;
+		else if (*str == ')')
+			(*close)++;
 		else
+			return (0);
+		str++;
+	}
+	return (1);
+}
+
+int	is_valid(const char *str)
+{
+	int	level = 0;
+	int	i = -1;
+
+	while (str[++i])
+	{
+		if (str[i] == '(')
+			level++;
+		else if (str[i] == ')')
 		{
-			if ((balanced > 0 && *curr == '(') || (balanced < 0 && *curr == ')'))
-			{
-				converted++;
-				*curr = ' ';
-			}
-			rip(str, balanced, curr + 1);
-			converted--;
-			if (balanced < 0)
-			{
-				*curr = ')';
-			}
-			else if (balanced > 0)
-			{
-				*curr = '(';
-			}
-			rip(str, balanced,  curr + 1);
-			// printf("after backtracking string: %s\n", str);
-			curr++;
+			if (level == 0)
+				return (0);
+			level--;
 		}
 	}
-	return ;
+	return (level == 0);
+}
+
+void	rip(char *str, int i, int open, int closed, int to_remove)
+{
+	if (!to_remove)
+	{
+		if (is_valid(str))
+			puts(str); // is valid solution
+		return ;
+	}
+	if (!str[i])
+		return ;
+	//assumptions generator
+	if (open > closed && str[i] == '(') // opening bracket needs to be removed
+	{
+		str[i] = ' ';
+		rip(str, i + 1, open - 1, closed, to_remove - 1); // try removing
+		str[i] = '(';
+		rip(str, i + 1, open, closed, to_remove); // try keeping
+	}
+	else if (open < closed && str[i] == ')') // closing bracket needs to be removed
+	{
+		str[i] = ' ';
+		rip(str, i + 1, open, closed - 1, to_remove - 1); // try removing
+		str[i] = ')';
+		rip(str, i + 1, open, closed, to_remove); // try keeping
+	}
+	else // if i am at the bracket i don't need to remove
+		rip(str, i + 1, open, closed, to_remove);
 }
 
 int	main(int argc, char *argv[])
 {
-	int	balanced;
+	int	open = 0;
+	int	closed = 0;
+	int	to_remove = 0;
 
 	if (argc != 2 || !argv[1])
 		return (1);
-	balanced = is_balanced(argv[1]);
-	if (!balanced)
+	if (!count_brackets(argv[1], &open, &closed))
+		return (1);
+	to_remove = abs(open - closed);
+	if (!to_remove)
 		puts(argv[1]);
-	printf("balanced: %d\n", balanced);
-	rip(argv[1], balanced, argv[1]);
+	rip(argv[1], 0, open, closed, to_remove);
 }
